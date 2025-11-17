@@ -7,7 +7,9 @@ import { users, products, categories, orders, orderItems, discountCodes, carts, 
 import { eq, desc, and, gte, lte, sql, or } from "drizzle-orm";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2024-11-20.acacia" as any });
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2024-11-20.acacia" as any })
+  : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
@@ -524,11 +526,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const amountInFils = Math.round(total * 100);
 
+      if (!stripe) {
+        return res.status(503).json({ error: "Payment service not configured. Please contact administrator." });
+      }
+
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInFils,
         currency: "aed",
         automatic_payment_methods: {
           enabled: true,
+        },
+        metadata: {
+          cartId: cart.id,
         },
       });
 
@@ -539,12 +548,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/orders", requireAuth, async (req, res) => {
+  app.post("/api/orders", async (req, res) => {
     try {
       const { paymentIntentId, shippingAddress, customerName, customerEmail, customerPhone } = req.body;
 
       if (!paymentIntentId || !shippingAddress || !customerName) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (!stripe) {
+        return res.status(503).json({ error: "Payment service not configured" });
       }
 
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -553,7 +566,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Payment not completed" });
       }
 
-      const [cart] = await db.select().from(carts).where(eq(carts.userId, req.user!.id));
+      let cart;
+      let userId = null;
+      
+      const cartIdFromPayment = paymentIntent.metadata?.cartId;
+      
+      if (req.isAuthenticated()) {
+        userId = req.user!.id;
+        [cart] = await db.select().from(carts).where(eq(carts.userId, userId));
+      } else if (cartIdFromPayment) {
+        [cart] = await db.select().from(carts).where(eq(carts.id, cartIdFromPayment));
+      } else if (req.session.cartId) {
+        [cart] = await db.select().from(carts).where(eq(carts.id, req.session.cartId));
+      }
 
       if (!cart) {
         return res.status(400).json({ error: "Cart not found" });
@@ -583,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [order] = await db
         .insert(orders)
         .values({
-          userId: req.user!.id,
+          userId: userId ?? null,
           status: "pending",
           total: total.toFixed(2),
           discountAmount: "0",

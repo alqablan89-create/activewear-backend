@@ -54,7 +54,7 @@ export const products = pgTable("products", {
 // Orders table
 export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(),
+  userId: varchar("user_id").references(() => users.id),
   status: text("status").default("pending").notNull(), // pending, processing, shipped, delivered, cancelled
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0").notNull(),

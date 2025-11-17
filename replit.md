@@ -82,11 +82,14 @@ Preferred communication style: Simple, everyday language.
 
 **Schema Design**
 - **Users**: Authentication, profile data, admin role flag
-- **Categories**: Bilingual names (English/Arabic), slugs, display ordering, images
-- **Products**: Bilingual product information, pricing, inventory, images (JSONB array), videos, colors/sizes (JSONB arrays), feature flags (isNew, isFeatured, isOnSale)
-- **Orders**: Order tracking, status, totals, shipping details
-- **Order Items**: Line items with product references, quantities, prices
-- **Discount Codes**: Coupon management with validation rules
+- **Categories**: Bilingual names (English/Arabic), slugs, display ordering, images, SEO fields (metaTitle, metaDescription, metaKeywords)
+- **Products**: Bilingual product information, pricing, inventory, images (JSONB array), videos, colors/sizes (JSONB arrays), feature flags (isNew, isFeatured, isOnSale), SEO fields (metaTitle, metaDescription, metaKeywords)
+- **Orders**: Order tracking, status, totals, shipping details, payment metadata (paymentMethod, paymentStatus, transactionId)
+- **Order Items**: Line items with product references, quantities, prices, color/size selections
+- **Discount Codes**: Coupon management with validation rules (percentage, fixed, bundle types)
+- **Carts**: Session-based cart management for logged-in users and guests
+- **Cart Items**: Cart line items with product variants
+- **Wishlists**: User wishlist functionality with session/user storage
 
 **Data Relationships**
 - Products belong to Categories (foreign key: categoryId)
@@ -116,11 +119,20 @@ Preferred communication style: Simple, everyday language.
 
 **Admin Dashboard**
 - Sales statistics and analytics
-- Product CRUD operations
-- Category management
-- Order processing
+- Product CRUD operations with image upload via object storage
+- Category management with full CRUD and SEO fields
+- Discount/Offers management (percentage, fixed amount, bundle discounts)
+- Order processing and management
 - User management
-- Discount code administration
+- Image upload integration with Google Cloud Storage/Replit Object Storage
+
+**Payment Processing**
+- Stripe integration for credit/debit card payments
+- Payment intent creation with AED currency support
+- Order creation linked to successful payments
+- Transaction tracking with payment status management
+- Payment success/failure pages
+- Secure checkout with Stripe Elements
 
 ## External Dependencies
 
@@ -155,11 +167,21 @@ Preferred communication style: Simple, everyday language.
 **File Handling**
 - Uppy (Core, Dashboard, React, AWS S3 plugin)
 - @google-cloud/storage client
+- Custom ImageUploader component for admin product image uploads
+- Object storage service with signed upload URLs
+
+**Payment Processing**
+- Stripe SDK (@stripe/stripe-js, @stripe/react-stripe-js, stripe)
+- Payment Elements for secure card input
+- AED currency support for UAE market
 
 ### Environment Variables Required
 - `DATABASE_URL`: PostgreSQL connection string
 - `SESSION_SECRET`: Session encryption key (defaults provided for development)
 - `PUBLIC_OBJECT_SEARCH_PATHS`: Comma-separated bucket paths for object storage
+- `DEFAULT_OBJECT_STORAGE_BUCKET_ID`: Object storage bucket identifier
+- `VITE_STRIPE_PUBLIC_KEY`: Stripe publishable key (starts with pk_) - required for checkout
+- `STRIPE_SECRET_KEY`: Stripe secret key (starts with sk_) - required for payment processing
 
 ### Development Tools
 - TypeScript for type checking

@@ -9,10 +9,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
-import { ShoppingBag, Lock } from 'lucide-react';
+import { ShoppingBag, Lock, User } from 'lucide-react';
 
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY 
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
@@ -26,6 +28,11 @@ function CheckoutForm() {
   const { toast } = useToast();
   const { items, total, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [shippingAddress, setShippingAddress] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +44,14 @@ function CheckoutForm() {
     if (items.length === 0) {
       toast({
         title: t('cart.empty'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!customerName || !customerEmail || !customerPhone || !shippingAddress) {
+      toast({
+        title: t('checkout.requiredFields'),
         variant: 'destructive',
       });
       return;
@@ -67,13 +82,11 @@ function CheckoutForm() {
         navigate('/payment/failure');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         const orderData = {
-          items,
-          total,
-          customerName: 'Customer',
-          customerEmail: '',
-          customerPhone: '',
-          shippingAddress: 'Default Address',
-          transactionId: paymentIntent.id,
+          paymentIntentId: paymentIntent.id,
+          customerName,
+          customerEmail,
+          customerPhone,
+          shippingAddress,
         };
 
         const orderResponse = await apiRequest('POST', '/api/orders', orderData);
@@ -96,7 +109,69 @@ function CheckoutForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} data-testid="payment-form">
+    <form onSubmit={handleSubmit} data-testid="payment-form" className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            {t('checkout.shippingInformation')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="customer-name">{t('checkout.fullName')}</Label>
+            <Input
+              id="customer-name"
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder={t('checkout.fullName')}
+              required
+              data-testid="input-customer-name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="customer-email">{t('checkout.email')}</Label>
+            <Input
+              id="customer-email"
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder={t('checkout.email')}
+              required
+              data-testid="input-email"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="customer-phone">{t('checkout.phone')}</Label>
+            <Input
+              id="customer-phone"
+              type="tel"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder={t('checkout.phone')}
+              required
+              data-testid="input-phone"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shipping-address">{t('checkout.shippingAddress')}</Label>
+            <Textarea
+              id="shipping-address"
+              value={shippingAddress}
+              onChange={(e) => setShippingAddress(e.target.value)}
+              placeholder={t('checkout.shippingAddress')}
+              rows={3}
+              required
+              data-testid="textarea-address"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
