@@ -103,7 +103,7 @@ export default function CartPage() {
 
                           <div className="text-right flex flex-col justify-between">
                             <p className="font-semibold" data-testid={`text-price-${index}`}>
-                              ${(parseFloat(item.product.price) * item.quantity).toFixed(2)}
+                              AED {(parseFloat(item.product.price) * item.quantity).toFixed(2)}
                             </p>
                             <Button
                               variant="ghost"
@@ -130,19 +130,19 @@ export default function CartPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>{t('cart.subtotal')}</span>
-                        <span data-testid="text-subtotal">${total.toFixed(2)}</span>
+                        <span data-testid="text-subtotal">AED {total.toFixed(2)}</span>
                       </div>
                       
                       {bundleDiscount > 0 && (
                         <div className="flex justify-between text-sm text-primary">
                           <span>{t('cart.discount')} (Bundle 10%)</span>
-                          <span data-testid="text-discount">-${bundleDiscount.toFixed(2)}</span>
+                          <span data-testid="text-discount">-AED {bundleDiscount.toFixed(2)}</span>
                         </div>
                       )}
                       
                       <div className="border-t pt-2 flex justify-between font-semibold text-lg">
                         <span>{t('cart.total')}</span>
-                        <span data-testid="text-total">${finalTotal.toFixed(2)}</span>
+                        <span data-testid="text-total">AED {finalTotal.toFixed(2)}</span>
                       </div>
                     </div>
 

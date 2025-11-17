@@ -3,8 +3,8 @@ import { createServer, type Server } from "http";
 import { db } from "./db";
 import { setupAuth, requireAuth, requireAdmin } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { users, products, categories, orders, orderItems, discountCodes, carts, cartItems, shippingAddresses, orderStatusHistory } from "@shared/schema";
-import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
+import { users, products, categories, orders, orderItems, discountCodes, carts, cartItems, shippingAddresses, orderStatusHistory, wishlists } from "@shared/schema";
+import { eq, desc, and, gte, lte, sql, or } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
@@ -341,6 +341,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error clearing cart:", error);
       res.status(500).json({ error: "Failed to clear cart" });
+    }
+  });
+
+  // Wishlist routes
+  app.get("/api/wishlist", async (req, res) => {
+    try {
+      let wishlistItems = [];
+      
+      if (req.isAuthenticated()) {
+        wishlistItems = await db
+          .select({
+            id: wishlists.id,
+            productId: wishlists.productId,
+            createdAt: wishlists.createdAt,
+            product: products,
+          })
+          .from(wishlists)
+          .leftJoin(products, eq(wishlists.productId, products.id))
+          .where(eq(wishlists.userId, req.user!.id));
+      } else if (req.session.id) {
+        wishlistItems = await db
+          .select({
+            id: wishlists.id,
+            productId: wishlists.productId,
+            createdAt: wishlists.createdAt,
+            product: products,
+          })
+          .from(wishlists)
+          .leftJoin(products, eq(wishlists.productId, products.id))
+          .where(eq(wishlists.sessionId, req.session.id));
+      }
+      
+      res.json(wishlistItems);
+    } catch (error) {
+      console.error("Error fetching wishlist:", error);
+      res.status(500).json({ error: "Failed to fetch wishlist" });
+    }
+  });
+
+  app.post("/api/wishlist", async (req, res) => {
+    try {
+      const { productId } = req.body;
+      
+      if (!productId) {
+        return res.status(400).json({ error: "Product ID is required" });
+      }
+
+      // Check if product exists
+      const [product] = await db
+        .select()
+        .from(products)
+        .where(eq(products.id, productId));
+      
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      // Check if already in wishlist
+      let existing;
+      if (req.isAuthenticated()) {
+        [existing] = await db
+          .select()
+          .from(wishlists)
+          .where(
+            and(
+              eq(wishlists.userId, req.user!.id),
+              eq(wishlists.productId, productId)
+            )
+          );
+      } else {
+        [existing] = await db
+          .select()
+          .from(wishlists)
+          .where(
+            and(
+              eq(wishlists.sessionId, req.session.id),
+              eq(wishlists.productId, productId)
+            )
+          );
+      }
+
+      if (existing) {
+        return res.status(400).json({ error: "Product already in wishlist" });
+      }
+
+      // Add to wishlist
+      const [wishlistItem] = await db
+        .insert(wishlists)
+        .values({
+          userId: req.isAuthenticated() ? req.user!.id : null,
+          sessionId: req.isAuthenticated() ? null : req.session.id,
+          productId,
+        })
+        .returning();
+
+      res.status(201).json(wishlistItem);
+    } catch (error) {
+      console.error("Error adding to wishlist:", error);
+      res.status(500).json({ error: "Failed to add to wishlist" });
+    }
+  });
+
+  app.delete("/api/wishlist/:id", async (req, res) => {
+    try {
+      const [item] = await db
+        .select()
+        .from(wishlists)
+        .where(eq(wishlists.id, req.params.id));
+
+      if (!item) {
+        return res.status(404).json({ error: "Wishlist item not found" });
+      }
+
+      // Check ownership
+      if (req.isAuthenticated()) {
+        if (item.userId !== req.user!.id) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+      } else {
+        if (item.sessionId !== req.session.id) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+      }
+
+      await db.delete(wishlists).where(eq(wishlists.id, req.params.id));
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Error removing from wishlist:", error);
+      res.status(500).json({ error: "Failed to remove from wishlist" });
     }
   });
 

@@ -9,7 +9,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t bg-background">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-lg font-semibold mb-4">Lift Me Up</h3>
             <p className="text-sm text-muted-foreground mb-4">
@@ -83,6 +83,40 @@ export function SiteFooter() {
                   </span>
                 </Link>
               </li>
+              <li>
+                <Link href="/gift-card">
+                  <span className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-gift-card">
+                    Gift Cards
+                  </span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold mb-4">Legal</h4>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/terms">
+                  <span className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-terms">
+                    Terms & Conditions
+                  </span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy">
+                  <span className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-privacy">
+                    Privacy Policy
+                  </span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/cookie-policy">
+                  <span className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-cookie">
+                    Cookie Policy
+                  </span>
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -91,22 +125,22 @@ export function SiteFooter() {
             <ul className="space-y-2">
               <li>
                 <Link href="/shop?category=performance-shirt">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">Performance Shirts</span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-category-performance">Performance Shirts</span>
                 </Link>
               </li>
               <li>
                 <Link href="/shop?category=hooded">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">Hooded Tops</span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-category-hooded">Hooded Tops</span>
                 </Link>
               </li>
               <li>
                 <Link href="/shop?category=t-shirt">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">T-Shirts</span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-category-tshirt">T-Shirts</span>
                 </Link>
               </li>
               <li>
                 <Link href="/shop?category=caps">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">Caps</span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground" data-testid="link-category-caps">Caps</span>
                 </Link>
               </li>
             </ul>

@@ -5,7 +5,7 @@ import type { Product, Category } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import heroImage from '@assets/generated_images/Womens_activewear_hero_lifestyle_8c862ad9.png';
+import { HeroSlider } from '@/components/hero-slider';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 
@@ -29,30 +29,8 @@ export default function HomePage() {
       <SiteHeader />
       
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative h-[80vh] md:h-[600px] overflow-hidden">
-          <div className="absolute inset-0">
-            <img
-              src={heroImage}
-              alt="Women's activewear"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
-          </div>
-          
-          <div className="relative container mx-auto px-4 h-full flex items-center justify-center">
-            <div className="text-center max-w-3xl">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6" data-testid="text-hero-headline">
-                {t('hero.headline')}
-              </h1>
-              <Link href="/shop">
-                <Button size="lg" className="text-lg px-8 backdrop-blur-md bg-primary/90" data-testid="button-shop-now">
-                  {t('hero.cta')}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* Hero Slider */}
+        <HeroSlider />
 
         {/* Categories Section */}
         <section className="py-16 md:py-20 bg-background">

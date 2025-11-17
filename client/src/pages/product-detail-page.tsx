@@ -177,12 +177,12 @@ export default function ProductDetailPage() {
                 </h1>
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-3xl font-bold" data-testid="text-product-price">
-                    ${parseFloat(product.price).toFixed(2)}
+                    AED {parseFloat(product.price).toFixed(2)}
                   </span>
                   {hasDiscount && (
                     <>
                       <span className="text-xl text-muted-foreground line-through">
-                        ${parseFloat(product.compareAtPrice!).toFixed(2)}
+                        AED {parseFloat(product.compareAtPrice!).toFixed(2)}
                       </span>
                       <Badge variant="destructive">Sale</Badge>
                     </>

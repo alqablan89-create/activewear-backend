@@ -118,6 +118,15 @@ export const shippingAddresses = pgTable("shipping_addresses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Wishlist table
+export const wishlists = pgTable("wishlists", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  sessionId: text("session_id"), // For guest users
+  productId: varchar("product_id").references(() => products.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Order status history table
 export const orderStatusHistory = pgTable("order_status_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -141,6 +150,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   orders: many(orders),
   carts: many(carts),
   shippingAddresses: many(shippingAddresses),
+  wishlists: many(wishlists),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -154,6 +164,7 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   }),
   orderItems: many(orderItems),
   cartItems: many(cartItems),
+  wishlists: many(wishlists),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
@@ -199,6 +210,17 @@ export const shippingAddressesRelations = relations(shippingAddresses, ({ one })
   user: one(users, {
     fields: [shippingAddresses.userId],
     references: [users.id],
+  }),
+}));
+
+export const wishlistsRelations = relations(wishlists, ({ one }) => ({
+  user: one(users, {
+    fields: [wishlists.userId],
+    references: [users.id],
+  }),
+  product: one(products, {
+    fields: [wishlists.productId],
+    references: [products.id],
   }),
 }));
 
@@ -259,6 +281,11 @@ export const insertShippingAddressSchema = createInsertSchema(shippingAddresses)
   createdAt: true,
 });
 
+export const insertWishlistSchema = createInsertSchema(wishlists).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertOrderStatusHistorySchema = createInsertSchema(orderStatusHistory).omit({
   id: true,
   createdAt: true,
@@ -294,6 +321,9 @@ export type CartItem = typeof cartItems.$inferSelect;
 
 export type InsertShippingAddress = z.infer<typeof insertShippingAddressSchema>;
 export type ShippingAddress = typeof shippingAddresses.$inferSelect;
+
+export type InsertWishlist = z.infer<typeof insertWishlistSchema>;
+export type Wishlist = typeof wishlists.$inferSelect;
 
 export type InsertOrderStatusHistory = z.infer<typeof insertOrderStatusHistorySchema>;
 export type OrderStatusHistory = typeof orderStatusHistory.$inferSelect;

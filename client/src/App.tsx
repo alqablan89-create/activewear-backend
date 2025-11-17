@@ -19,6 +19,10 @@ import AdminOrders from "@/pages/admin-orders";
 import AdminUsers from "@/pages/admin-users";
 import AboutPage from "@/pages/about-page";
 import ContactPage from "@/pages/contact-page";
+import GiftCardPage from "@/pages/gift-card-page";
+import TermsPage from "@/pages/terms-page";
+import PrivacyPage from "@/pages/privacy-page";
+import CookiePage from "@/pages/cookie-page";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,6 +36,10 @@ function Router() {
       <Route path="/offers" component={ShopPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/contact" component={ContactPage} />
+      <Route path="/gift-card" component={GiftCardPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/cookie-policy" component={CookiePage} />
       <Route path="/shipping" component={() => <div className="min-h-screen flex items-center justify-center"><h1 className="text-3xl font-bold">Return & Shipping Policy</h1></div>} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/admin" component={AdminDashboard} />
