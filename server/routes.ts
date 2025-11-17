@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { db } from "./db";
 import { setupAuth, requireAuth, requireAdmin } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { users, products, categories, orders, orderItems, discountCodes } from "@shared/schema";
+import { users, products, categories, orders, orderItems, discountCodes, carts, cartItems, shippingAddresses } from "@shared/schema";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -129,6 +129,218 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error searching for public object:", error);
       return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Cart routes
+  app.get("/api/cart", async (req, res) => {
+    try {
+      let cart;
+      
+      if (req.isAuthenticated()) {
+        // Get or create cart for logged-in user
+        [cart] = await db.select().from(carts).where(eq(carts.userId, req.user!.id));
+        if (!cart) {
+          [cart] = await db.insert(carts).values({ userId: req.user!.id }).returning();
+        }
+      } else {
+        // Get or create cart for guest using session
+        if (!req.session.cartId) {
+          [cart] = await db.insert(carts).values({ sessionId: req.sessionID }).returning();
+          req.session.cartId = cart.id;
+        } else {
+          [cart] = await db.select().from(carts).where(eq(carts.id, req.session.cartId));
+        }
+      }
+
+      // Get cart items with product details
+      const items = await db
+        .select({
+          id: cartItems.id,
+          quantity: cartItems.quantity,
+          selectedColor: cartItems.selectedColor,
+          selectedSize: cartItems.selectedSize,
+          product: products,
+        })
+        .from(cartItems)
+        .innerJoin(products, eq(cartItems.productId, products.id))
+        .where(eq(cartItems.cartId, cart.id));
+
+      res.json({ cart, items });
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      res.status(500).json({ error: "Failed to fetch cart" });
+    }
+  });
+
+  app.post("/api/cart", async (req, res) => {
+    try {
+      const { productId, quantity, selectedColor, selectedSize } = req.body;
+      
+      // Validate inputs
+      if (!productId) {
+        return res.status(400).json({ error: "Product ID is required" });
+      }
+      if (!quantity || quantity < 1 || !Number.isInteger(quantity)) {
+        return res.status(400).json({ error: "Quantity must be a positive integer" });
+      }
+
+      let cart;
+      if (req.isAuthenticated()) {
+        [cart] = await db.select().from(carts).where(eq(carts.userId, req.user!.id));
+        if (!cart) {
+          [cart] = await db.insert(carts).values({ userId: req.user!.id }).returning();
+        }
+      } else {
+        if (!req.session.cartId) {
+          [cart] = await db.insert(carts).values({ sessionId: req.sessionID }).returning();
+          req.session.cartId = cart.id;
+        } else {
+          [cart] = await db.select().from(carts).where(eq(carts.id, req.session.cartId));
+        }
+      }
+
+      // Check if item already exists in cart
+      const [existingItem] = await db
+        .select()
+        .from(cartItems)
+        .where(
+          and(
+            eq(cartItems.cartId, cart.id),
+            eq(cartItems.productId, productId),
+            selectedColor ? eq(cartItems.selectedColor, selectedColor) : sql`${cartItems.selectedColor} IS NULL`,
+            selectedSize ? eq(cartItems.selectedSize, selectedSize) : sql`${cartItems.selectedSize} IS NULL`
+          )
+        );
+
+      if (existingItem) {
+        // Update quantity
+        const newQuantity = existingItem.quantity + quantity;
+        const [updated] = await db
+          .update(cartItems)
+          .set({ quantity: newQuantity })
+          .where(eq(cartItems.id, existingItem.id))
+          .returning();
+        res.json(updated);
+      } else {
+        // Add new item
+        const [newItem] = await db
+          .insert(cartItems)
+          .values({
+            cartId: cart.id,
+            productId,
+            quantity,
+            selectedColor,
+            selectedSize,
+          })
+          .returning();
+        res.status(201).json(newItem);
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ error: "Failed to add to cart" });
+    }
+  });
+
+  app.put("/api/cart/:id", async (req, res) => {
+    try {
+      const { quantity } = req.body;
+      
+      // Validate quantity
+      if (!quantity || quantity < 1 || !Number.isInteger(quantity)) {
+        return res.status(400).json({ error: "Quantity must be a positive integer" });
+      }
+
+      // Get the cart item with its cart
+      const [item] = await db
+        .select({
+          item: cartItems,
+          cart: carts,
+        })
+        .from(cartItems)
+        .innerJoin(carts, eq(cartItems.cartId, carts.id))
+        .where(eq(cartItems.id, req.params.id));
+
+      if (!item) {
+        return res.status(404).json({ error: "Cart item not found" });
+      }
+
+      // Verify ownership
+      if (req.isAuthenticated()) {
+        if (item.cart.userId !== req.user!.id) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+      } else {
+        if (!req.session.cartId || item.cart.id !== req.session.cartId) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+      }
+
+      // Update quantity
+      const [updated] = await db
+        .update(cartItems)
+        .set({ quantity })
+        .where(eq(cartItems.id, req.params.id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ error: "Failed to update cart item" });
+    }
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    try {
+      // Get the cart item with its cart
+      const [item] = await db
+        .select({
+          item: cartItems,
+          cart: carts,
+        })
+        .from(cartItems)
+        .innerJoin(carts, eq(cartItems.cartId, carts.id))
+        .where(eq(cartItems.id, req.params.id));
+
+      if (!item) {
+        return res.status(404).json({ error: "Cart item not found" });
+      }
+
+      // Verify ownership
+      if (req.isAuthenticated()) {
+        if (item.cart.userId !== req.user!.id) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+      } else {
+        if (!req.session.cartId || item.cart.id !== req.session.cartId) {
+          return res.status(403).json({ error: "Unauthorized" });
+        }
+      }
+
+      await db.delete(cartItems).where(eq(cartItems.id, req.params.id));
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Error removing cart item:", error);
+      res.status(500).json({ error: "Failed to remove cart item" });
+    }
+  });
+
+  app.delete("/api/cart", async (req, res) => {
+    try {
+      let cart;
+      if (req.isAuthenticated()) {
+        [cart] = await db.select().from(carts).where(eq(carts.userId, req.user!.id));
+      } else if (req.session.cartId) {
+        [cart] = await db.select().from(carts).where(eq(carts.id, req.session.cartId));
+      }
+
+      if (cart) {
+        await db.delete(cartItems).where(eq(cartItems.cartId, cart.id));
+      }
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+      res.status(500).json({ error: "Failed to clear cart" });
     }
   });
 

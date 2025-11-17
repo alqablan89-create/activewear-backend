@@ -82,7 +82,7 @@ export default function CartPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => updateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
+                                onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                                 data-testid={`button-decrease-${index}`}
                               >
                                 -
@@ -93,7 +93,7 @@ export default function CartPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
                                 data-testid={`button-increase-${index}`}
                               >
                                 +
@@ -108,7 +108,7 @@ export default function CartPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeItem(item.product.id)}
+                              onClick={() => removeItem(item.id)}
                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               data-testid={`button-remove-${index}`}
                             >

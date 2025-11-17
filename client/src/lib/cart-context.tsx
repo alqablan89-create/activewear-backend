@@ -1,70 +1,100 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Product } from '@shared/schema';
+import { apiRequest } from './queryClient';
 
 export interface CartItem {
+  id: string;
   product: Product;
   quantity: number;
-  selectedColor?: string;
-  selectedSize?: string;
+  selectedColor?: string | null;
+  selectedSize?: string | null;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, quantity: number, color?: string, size?: string) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
+  addItem: (product: Product, quantity: number, color?: string, size?: string) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   total: number;
   itemCount: number;
+  isLoading: boolean;
+  refetch: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('cart');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchCart = async () => {
+    try {
+      const res = await fetch('/api/cart', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items.map((item: any) => ({
+          id: item.id,
+          product: item.product,
+          quantity: item.quantity,
+          selectedColor: item.selectedColor,
+          selectedSize: item.selectedSize,
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    fetchCart();
+  }, []);
 
-  const addItem = (product: Product, quantity: number, color?: string, size?: string) => {
-    setItems((current) => {
-      const existing = current.find(
-        (item) =>
-          item.product.id === product.id &&
-          item.selectedColor === color &&
-          item.selectedSize === size
-      );
-
-      if (existing) {
-        return current.map((item) =>
-          item === existing
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-
-      return [...current, { product, quantity, selectedColor: color, selectedSize: size }];
-    });
+  const addItem = async (product: Product, quantity: number, color?: string, size?: string) => {
+    try {
+      await apiRequest('POST', '/api/cart', {
+        productId: product.id,
+        quantity,
+        selectedColor: color,
+        selectedSize: size,
+      });
+      await fetchCart();
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      throw error;
+    }
   };
 
-  const removeItem = (productId: string) => {
-    setItems((current) => current.filter((item) => item.product.id !== productId));
+  const removeItem = async (itemId: string) => {
+    try {
+      await apiRequest('DELETE', `/api/cart/${itemId}`);
+      await fetchCart();
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      throw error;
+    }
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    setItems((current) =>
-      current.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
-    );
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    try {
+      await apiRequest('PUT', `/api/cart/${itemId}`, { quantity });
+      await fetchCart();
+    } catch (error) {
+      console.error('Error updating cart:', error);
+      throw error;
+    }
   };
 
-  const clearCart = () => {
-    setItems([]);
+  const clearCart = async () => {
+    try {
+      await apiRequest('DELETE', '/api/cart');
+      await fetchCart();
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      throw error;
+    }
   };
 
   const total = items.reduce(
@@ -84,6 +114,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         total,
         itemCount,
+        isLoading,
+        refetch: fetchCart,
       }}
     >
       {children}
