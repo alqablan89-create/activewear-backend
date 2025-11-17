@@ -196,12 +196,21 @@ i18n
   });
 
 // Set initial direction
-if (typeof document !== 'undefined') {
-  const initialLang = i18n.language || 'en';
-  const isArabic = initialLang === 'ar';
-  document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
-  document.documentElement.lang = initialLang;
-  document.body.dir = isArabic ? 'rtl' : 'ltr';
-}
+const updateDocumentDirection = (lang: string) => {
+  if (typeof document !== 'undefined') {
+    const isArabic = lang === 'ar';
+    document.documentElement.dir = isArabic ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+    document.body.dir = isArabic ? 'rtl' : 'ltr';
+  }
+};
+
+// Set initial direction
+updateDocumentDirection(i18n.language || 'en');
+
+// Listen for language changes
+i18n.on('languageChanged', (lng) => {
+  updateDocumentDirection(lng);
+});
 
 export default i18n;
