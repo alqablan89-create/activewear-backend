@@ -582,6 +582,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin users routes
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          fullName: users.fullName,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+        })
+        .from(users)
+        .orderBy(desc(users.createdAt));
+      
+      // Get order count for each user
+      const usersWithStats = await Promise.all(
+        allUsers.map(async (user) => {
+          const orderCount = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(orders)
+            .where(eq(orders.userId, user.id));
+          
+          return {
+            ...user,
+            orderCount: Number(orderCount[0]?.count || 0),
+          };
+        })
+      );
+      
+      res.json(usersWithStats);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          fullName: users.fullName,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+        })
+        .from(users)
+        .where(eq(users.id, req.params.id));
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Fetch user's orders
+      const userOrders = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.userId, req.params.id))
+        .orderBy(desc(orders.createdAt));
+
+      // Fetch user's shipping addresses
+      const addresses = await db
+        .select()
+        .from(shippingAddresses)
+        .where(eq(shippingAddresses.userId, req.params.id))
+        .orderBy(desc(shippingAddresses.isDefault));
+
+      res.json({ ...user, orders: userOrders, addresses });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

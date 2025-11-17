@@ -137,36 +137,6 @@ export default function HomePage() {
             )}
           </div>
         </section>
-
-        {/* Special Offers Section */}
-        <section className="py-16 md:py-20 bg-primary/5">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-semibold text-center mb-4" data-testid="text-offers-title">
-              {t('home.specialOffers')}
-            </h2>
-            <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-              Buy a T-shirt + Cap and get 10% discount automatically applied at checkout
-            </p>
-            
-            {featuredLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="aspect-[3/4] rounded-md" />
-                ))}
-              </div>
-            ) : featuredProducts && featuredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {featuredProducts.slice(0, 4).map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                No featured products available
-              </div>
-            )}
-          </div>
-        </section>
       </main>
 
       <SiteFooter />
