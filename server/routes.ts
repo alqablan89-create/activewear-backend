@@ -785,6 +785,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin - Discount Codes
+  app.get("/api/admin/discounts", requireAdmin, async (req, res) => {
+    try {
+      const allDiscounts = await db
+        .select()
+        .from(discountCodes)
+        .orderBy(desc(discountCodes.createdAt));
+      res.json(allDiscounts);
+    } catch (error) {
+      console.error("Error fetching discount codes:", error);
+      res.status(500).json({ error: "Failed to fetch discount codes" });
+    }
+  });
+
+  app.post("/api/admin/discounts", requireAdmin, async (req, res) => {
+    try {
+      const { code, type, value, minPurchase, isActive, expiresAt, bundleProducts } = req.body;
+
+      // Validate required fields
+      if (!code || !type || !value) {
+        return res.status(400).json({ error: "Code, type, and value are required" });
+      }
+
+      // Validate type
+      if (!['percentage', 'fixed', 'bundle'].includes(type)) {
+        return res.status(400).json({ error: "Invalid discount type" });
+      }
+
+      // Check if code already exists
+      const [existing] = await db
+        .select()
+        .from(discountCodes)
+        .where(eq(discountCodes.code, code.toUpperCase()));
+
+      if (existing) {
+        return res.status(400).json({ error: "Discount code already exists" });
+      }
+
+      const [newDiscount] = await db
+        .insert(discountCodes)
+        .values({
+          code: code.toUpperCase(),
+          type,
+          value,
+          minPurchase: minPurchase || null,
+          isActive: isActive ?? true,
+          expiresAt: expiresAt || null,
+          bundleProducts: bundleProducts || null,
+        })
+        .returning();
+
+      res.status(201).json(newDiscount);
+    } catch (error) {
+      console.error("Error creating discount code:", error);
+      res.status(500).json({ error: "Failed to create discount code" });
+    }
+  });
+
+  app.put("/api/admin/discounts/:id", requireAdmin, async (req, res) => {
+    try {
+      const { code, type, value, minPurchase, isActive, expiresAt, bundleProducts } = req.body;
+
+      // Validate required fields
+      if (!code || !type || !value) {
+        return res.status(400).json({ error: "Code, type, and value are required" });
+      }
+
+      // Validate type
+      if (!['percentage', 'fixed', 'bundle'].includes(type)) {
+        return res.status(400).json({ error: "Invalid discount type" });
+      }
+
+      // Check if code exists for other discounts
+      const [existing] = await db
+        .select()
+        .from(discountCodes)
+        .where(
+          and(
+            eq(discountCodes.code, code.toUpperCase()),
+            sql`${discountCodes.id} != ${req.params.id}`
+          )
+        );
+
+      if (existing) {
+        return res.status(400).json({ error: "Discount code already exists" });
+      }
+
+      const [updatedDiscount] = await db
+        .update(discountCodes)
+        .set({
+          code: code.toUpperCase(),
+          type,
+          value,
+          minPurchase: minPurchase || null,
+          isActive: isActive ?? true,
+          expiresAt: expiresAt || null,
+          bundleProducts: bundleProducts || null,
+        })
+        .where(eq(discountCodes.id, req.params.id))
+        .returning();
+
+      if (!updatedDiscount) {
+        return res.status(404).json({ error: "Discount code not found" });
+      }
+
+      res.json(updatedDiscount);
+    } catch (error) {
+      console.error("Error updating discount code:", error);
+      res.status(500).json({ error: "Failed to update discount code" });
+    }
+  });
+
+  app.delete("/api/admin/discounts/:id", requireAdmin, async (req, res) => {
+    try {
+      await db.delete(discountCodes).where(eq(discountCodes.id, req.params.id));
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Error deleting discount code:", error);
+      res.status(500).json({ error: "Failed to delete discount code" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

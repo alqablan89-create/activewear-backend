@@ -22,6 +22,9 @@ export const categories = pgTable("categories", {
   slug: text("slug").notNull().unique(),
   imageUrl: text("image_url"),
   displayOrder: integer("display_order").default(0).notNull(),
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  metaKeywords: text("meta_keywords"),
 });
 
 // Products table
@@ -42,6 +45,9 @@ export const products = pgTable("products", {
   isNew: boolean("is_new").default(false).notNull(),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isOnSale: boolean("is_on_sale").default(false).notNull(),
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  metaKeywords: text("meta_keywords"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -57,6 +63,9 @@ export const orders = pgTable("orders", {
   customerEmail: text("customer_email"),
   customerPhone: text("customer_phone"),
   shippingAddress: text("shipping_address").notNull(),
+  paymentMethod: text("payment_method"), // stripe, tabby, cash
+  paymentStatus: text("payment_status").default("pending").notNull(), // pending, completed, failed, refunded
+  transactionId: text("transaction_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
