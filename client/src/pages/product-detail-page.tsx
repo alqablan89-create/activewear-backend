@@ -12,9 +12,15 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { useCart } from '@/lib/cart-context';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Play } from 'lucide-react';
+import { ShoppingCart, Play, Eye, Ruler, Shirt, Truck, RotateCcw } from 'lucide-react';
 
 export default function ProductDetailPage() {
   const { t, i18n } = useTranslation();
@@ -291,6 +297,98 @@ export default function ProductDetailPage() {
                 <ShoppingCart className="h-5 w-5" />
                 {t('product.addToCart')}
               </Button>
+
+              {/* Product Information Accordion */}
+              <Accordion type="single" collapsible className="w-full mt-8">
+                <AccordionItem value="details">
+                  <AccordionTrigger className="text-left font-medium" data-testid="button-accordion-product-details">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      Product Details
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground" data-testid="content-product-details">
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li>Premium quality activewear designed for performance</li>
+                      <li>Moisture-wicking fabric keeps you dry and comfortable</li>
+                      <li>Four-way stretch for maximum mobility</li>
+                      <li>Flatlock seams to prevent chafing</li>
+                      <li>UV protection for outdoor activities</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="fit">
+                  <AccordionTrigger className="text-left font-medium" data-testid="button-accordion-fit">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4" />
+                      Fit
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground" data-testid="content-fit">
+                    <p className="mb-3">True to size with a comfortable, athletic fit.</p>
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li>Designed to fit close to the body for support</li>
+                      <li>If between sizes, we recommend sizing up</li>
+                      <li>Model is 5'8" wearing size S</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="fabric-care">
+                  <AccordionTrigger className="text-left font-medium" data-testid="button-accordion-fabric-care">
+                    <div className="flex items-center gap-2">
+                      <Shirt className="h-4 w-4" />
+                      Fabric Care
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground" data-testid="content-fabric-care">
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li>Machine wash cold with like colors</li>
+                      <li>Do not bleach</li>
+                      <li>Tumble dry low or hang dry</li>
+                      <li>Do not iron</li>
+                      <li>Do not dry clean</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="shipping">
+                  <AccordionTrigger className="text-left font-medium" data-testid="button-accordion-shipping">
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4" />
+                      Shipping & Delivery
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground" data-testid="content-shipping">
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li>Free shipping on orders over $100</li>
+                      <li>Standard shipping: 5-7 business days</li>
+                      <li>Express shipping: 2-3 business days (additional fee)</li>
+                      <li>Orders are processed within 24 hours</li>
+                      <li>Tracking information provided via email</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="returns">
+                  <AccordionTrigger className="text-left font-medium" data-testid="button-accordion-returns">
+                    <div className="flex items-center gap-2">
+                      <RotateCcw className="h-4 w-4" />
+                      Free Returns
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground" data-testid="content-returns">
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li>30-day return policy</li>
+                      <li>Items must be unworn and in original condition</li>
+                      <li>Free return shipping within the UAE</li>
+                      <li>Refunds processed within 5-7 business days</li>
+                      <li>Contact customer service to initiate a return</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </div>
 
