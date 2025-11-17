@@ -7,11 +7,17 @@ import { promisify } from "util";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import type { User } from "@shared/schema";
+import type { User as SchemaUser } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends Omit<User, "password"> {}
+    interface User extends Omit<SchemaUser, "password"> {}
+  }
+}
+
+declare module 'express-session' {
+  interface SessionData {
+    cartId?: string;
   }
 }
 

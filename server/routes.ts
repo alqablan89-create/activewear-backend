@@ -359,7 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wishlist routes
   app.get("/api/wishlist", async (req, res) => {
     try {
-      let wishlistItems = [];
+      let wishlistItems: any[] = [];
       
       if (req.isAuthenticated()) {
         wishlistItems = await db
