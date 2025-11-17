@@ -19,6 +19,7 @@ const resources = {
       },
       hero: {
         headline: 'Activewear Designed for Comfort, Style, and Performance',
+        subheadline: 'Elevate Your Workout with Premium Quality',
         cta: 'Shop Now',
       },
       home: {
@@ -138,6 +139,7 @@ const resources = {
       },
       hero: {
         headline: 'ملابس رياضية مصممة للراحة والأناقة والأداء',
+        subheadline: 'ارفعي مستوى تمرينك بجودة عالية',
         cta: 'تسوق الآن',
       },
       home: {
