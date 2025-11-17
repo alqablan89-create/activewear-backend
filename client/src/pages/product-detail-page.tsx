@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/accordion';
 import { useCart } from '@/lib/cart-context';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Play, Eye, Ruler, Shirt, Truck, RotateCcw } from 'lucide-react';
+import { ShoppingCart, Play, Eye, Ruler, Shirt, Truck, RotateCcw, Globe, Heart, Flag } from 'lucide-react';
+import { SiVisa, SiMastercard, SiApplepay } from 'react-icons/si';
 
 export default function ProductDetailPage() {
   const { t, i18n } = useTranslation();
@@ -297,6 +298,35 @@ export default function ProductDetailPage() {
                 <ShoppingCart className="h-5 w-5" />
                 {t('product.addToCart')}
               </Button>
+
+              {/* Payment Methods */}
+              <div className="flex items-center justify-center gap-3 py-4 border-b">
+                <SiApplepay className="h-6 w-auto text-foreground" data-testid="icon-apple-pay" />
+                <SiMastercard className="h-8 w-auto text-foreground" data-testid="icon-mastercard" />
+                <SiVisa className="h-8 w-auto text-foreground" data-testid="icon-visa" />
+                <div className="px-3 py-1 border rounded text-sm font-medium" data-testid="text-tabby">
+                  tabby
+                </div>
+                <div className="px-3 py-1 border rounded text-sm font-medium" data-testid="text-tamara">
+                  tamara
+                </div>
+              </div>
+
+              {/* Product Features */}
+              <div className="grid grid-cols-3 gap-4 py-6">
+                <div className="flex flex-col items-center text-center gap-2">
+                  <Globe className="h-8 w-8 text-primary" data-testid="icon-eco-friendly" />
+                  <span className="text-xs font-medium">Eco-friendly fabrics</span>
+                </div>
+                <div className="flex flex-col items-center text-center gap-2">
+                  <Heart className="h-8 w-8 text-primary" data-testid="icon-humanity" />
+                  <span className="text-xs font-medium">Humanity in Motion</span>
+                </div>
+                <div className="flex flex-col items-center text-center gap-2">
+                  <Flag className="h-8 w-8 text-primary" data-testid="icon-uae" />
+                  <span className="text-xs font-medium">Made in the UAE</span>
+                </div>
+              </div>
 
               {/* Product Information Accordion */}
               <Accordion type="single" collapsible className="w-full mt-8">
