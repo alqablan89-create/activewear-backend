@@ -1,0 +1,94 @@
+FULL WEBSITE BUILD PROMPT (Copy–Paste Ready)
+
+Women’s Activewear Store – Full E-commerce Website
+
+Design and build a complete e-commerce website for a women’s activewear brand.
+The style should be modern, minimal, clean, and feminine with light orange accents only (subtle highlights, thin borders, or buttons).
+
+The website must include:
+
+⸻
+
+1️⃣ HOME PAGE
+
+A modern landing page with:
+
+Hero Section
+	•	Full-width hero image (woman wearing sportswear – no clear faces if possible)
+	•	Headline: “Activewear Designed for Comfort, Style, and Performance.”
+	•	Button: Shop Now (light orange)
+	•	Clean background (white or soft gray)
+
+Collections Section
+
+4 category blocks:
+	•	Performance Shirt
+	•	Hoodie Sports Top
+	•	T-Shirts
+	•	Caps
+
+New Arrivals
+
+Grid of newest items …
+Build a complete bilingual online shop for my brand Lift Me Up.
+
+Brand Style
+	•	Background: White
+	•	Font: Black
+	•	Buttons: Orange
+	•	Clean, modern, sporty style.
+
+Languages
+	•	Website must be Arabic + English.
+	•	Auto language switch depending on browser language.
+	•	Allow manual toggle (AR / EN).
+
+Store Pages Needed
+	1.	Home Page
+	•	Hero section with sport-wear models.
+	•	Featured collections.
+	•	“New Arrivals” section.
+	•	“Special Offers” section.
+	•	Clean grid layout.
+	2.	Shop Page
+	•	All products in a grid.
+	•	Filters:
+	•	Price
+	•	Category
+	•	Color
+	•	Size
+	•	Sorting options: newest, price high–low, best selling.
+	3.	Categories
+Create 4 main categories:
+	•	Performance Shirt
+	•	Hooded
+	•	T-Shirt
+	•	Caps
+	•	Fragrance
+	4.	Product Page
+	•	Product name, price, description.
+	•	Multiple images + 1 video.
+	•	Size & color options.
+	•	Add to Cart button (orange).
+	•	“You may also like” recommended products.
+	5.	Offer System
+	•	Bundle Offer: “Buy a T-shirt + Cap = 10% discount”
+	6.	Other Pages
+	•	Contact Us
+	•	Login / Register
+	•	About Lift Me Up
+	•	Return & Shipping policy
+
+Admin Panel
+	•	Add / edit products.
+	•	Upload product images & videos.
+	•	Manage categories.
+	•	Manage orders.
+	•	Manage discount codes.
+
+Technical Requirements
+	•	Responsive for mobile/tablet/desktop.
+	•	SEO-optimized.
+	•	Fast image loading.
+	•	Clean, minimal UI.
+	•	Use my brand colors: white (background), black (text), orange (buttons).
