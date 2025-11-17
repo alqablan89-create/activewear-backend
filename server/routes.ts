@@ -5,6 +5,9 @@ import { setupAuth, requireAuth, requireAdmin } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { users, products, categories, orders, orderItems, discountCodes, carts, cartItems, shippingAddresses, orderStatusHistory, wishlists } from "@shared/schema";
 import { eq, desc, and, gte, lte, sql, or } from "drizzle-orm";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2024-11-20.acacia" as any });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
@@ -485,6 +488,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment and Order routes
+  app.post("/api/create-payment-intent", async (req, res) => {
+    try {
+      let cart;
+      
+      if (req.isAuthenticated()) {
+        [cart] = await db.select().from(carts).where(eq(carts.userId, req.user!.id));
+      } else if (req.session.cartId) {
+        [cart] = await db.select().from(carts).where(eq(carts.id, req.session.cartId));
+      }
+
+      if (!cart) {
+        return res.status(400).json({ error: "Cart not found" });
+      }
+
+      const items = await db
+        .select({
+          id: cartItems.id,
+          quantity: cartItems.quantity,
+          product: products,
+        })
+        .from(cartItems)
+        .innerJoin(products, eq(cartItems.productId, products.id))
+        .where(eq(cartItems.cartId, cart.id));
+
+      if (items.length === 0) {
+        return res.status(400).json({ error: "Cart is empty" });
+      }
+
+      let total = 0;
+      items.forEach(item => {
+        total += parseFloat(item.product.price) * item.quantity;
+      });
+
+      const amountInFils = Math.round(total * 100);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amountInFils,
+        currency: "aed",
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Failed to create payment intent" });
+    }
+  });
+
+  app.post("/api/orders", requireAuth, async (req, res) => {
+    try {
+      const { paymentIntentId, shippingAddress, customerName, customerEmail, customerPhone } = req.body;
+
+      if (!paymentIntentId || !shippingAddress || !customerName) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+      if (paymentIntent.status !== "succeeded") {
+        return res.status(400).json({ error: "Payment not completed" });
+      }
+
+      const [cart] = await db.select().from(carts).where(eq(carts.userId, req.user!.id));
+
+      if (!cart) {
+        return res.status(400).json({ error: "Cart not found" });
+      }
+
+      const items = await db
+        .select({
+          id: cartItems.id,
+          quantity: cartItems.quantity,
+          selectedColor: cartItems.selectedColor,
+          selectedSize: cartItems.selectedSize,
+          product: products,
+        })
+        .from(cartItems)
+        .innerJoin(products, eq(cartItems.productId, products.id))
+        .where(eq(cartItems.cartId, cart.id));
+
+      if (items.length === 0) {
+        return res.status(400).json({ error: "Cart is empty" });
+      }
+
+      let total = 0;
+      items.forEach(item => {
+        total += parseFloat(item.product.price) * item.quantity;
+      });
+
+      const [order] = await db
+        .insert(orders)
+        .values({
+          userId: req.user!.id,
+          status: "pending",
+          total: total.toFixed(2),
+          discountAmount: "0",
+          customerName,
+          customerEmail: customerEmail || null,
+          customerPhone: customerPhone || null,
+          shippingAddress,
+          paymentMethod: "stripe",
+          paymentStatus: "completed",
+          transactionId: paymentIntentId,
+        })
+        .returning();
+
+      const orderItemsData = items.map(item => ({
+        orderId: order.id,
+        productId: item.product.id,
+        productName: item.product.nameEn,
+        quantity: item.quantity,
+        price: item.product.price,
+        selectedColor: item.selectedColor,
+        selectedSize: item.selectedSize,
+      }));
+
+      await db.insert(orderItems).values(orderItemsData);
+
+      await db.delete(cartItems).where(eq(cartItems.cartId, cart.id));
+
+      res.status(201).json(order);
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ error: "Failed to create order" });
+    }
+  });
+
+  app.get("/api/orders", requireAuth, async (req, res) => {
+    try {
+      const userOrders = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.userId, req.user!.id))
+        .orderBy(desc(orders.createdAt));
+
+      const ordersWithItems = await Promise.all(
+        userOrders.map(async (order) => {
+          const items = await db
+            .select({
+              id: orderItems.id,
+              productId: orderItems.productId,
+              productName: orderItems.productName,
+              quantity: orderItems.quantity,
+              price: orderItems.price,
+              selectedColor: orderItems.selectedColor,
+              selectedSize: orderItems.selectedSize,
+              product: products,
+            })
+            .from(orderItems)
+            .leftJoin(products, eq(orderItems.productId, products.id))
+            .where(eq(orderItems.orderId, order.id));
+
+          return { ...order, items };
+        })
+      );
+
+      res.json(ordersWithItems);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.get("/api/orders/:id", requireAuth, async (req, res) => {
+    try {
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, req.params.id));
+
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      if (order.userId !== req.user!.id) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const items = await db
+        .select({
+          id: orderItems.id,
+          productId: orderItems.productId,
+          productName: orderItems.productName,
+          quantity: orderItems.quantity,
+          price: orderItems.price,
+          selectedColor: orderItems.selectedColor,
+          selectedSize: orderItems.selectedSize,
+          product: products,
+        })
+        .from(orderItems)
+        .leftJoin(products, eq(orderItems.productId, products.id))
+        .where(eq(orderItems.orderId, req.params.id));
+
+      res.json({ ...order, items });
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      res.status(500).json({ error: "Failed to fetch order" });
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/stats", requireAdmin, async (req, res) => {
     try {
@@ -916,6 +1122,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting discount code:", error);
       res.status(500).json({ error: "Failed to delete discount code" });
+    }
+  });
+
+  // Stripe payment routes
+  app.post("/api/create-payment-intent", async (req, res) => {
+    if (!stripe) {
+      return res.status(500).json({ error: "Stripe is not configured" });
+    }
+
+    try {
+      const { amount } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Invalid amount" });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100),
+        currency: "aed",
+      });
+      
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Error creating payment intent: " + error.message });
+    }
+  });
+
+  // Order creation endpoint
+  app.post("/api/orders", async (req, res) => {
+    try {
+      const { items: cartItemsData, total, customerName, customerEmail, customerPhone, shippingAddress, transactionId } = req.body;
+
+      if (!cartItemsData || cartItemsData.length === 0) {
+        return res.status(400).json({ error: "Cart is empty" });
+      }
+
+      if (!customerName || !shippingAddress) {
+        return res.status(400).json({ error: "Missing required customer information" });
+      }
+
+      const userId = req.isAuthenticated() ? req.user!.id : null;
+
+      const [order] = await db.insert(orders).values({
+        userId: userId!,
+        status: "pending",
+        total: total.toString(),
+        discountAmount: "0",
+        customerName,
+        customerEmail: customerEmail || null,
+        customerPhone: customerPhone || null,
+        shippingAddress,
+        paymentMethod: "stripe",
+        paymentStatus: "completed",
+        transactionId: transactionId || null,
+      }).returning();
+
+      for (const item of cartItemsData) {
+        await db.insert(orderItems).values({
+          orderId: order.id,
+          productId: item.product.id,
+          productName: item.product.nameEn,
+          quantity: item.quantity,
+          price: item.product.price,
+          selectedColor: item.selectedColor || null,
+          selectedSize: item.selectedSize || null,
+        });
+      }
+
+      await db.insert(orderStatusHistory).values({
+        orderId: order.id,
+        status: "pending",
+        note: "Order created",
+      });
+
+      res.status(201).json(order);
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ error: "Failed to create order" });
     }
   });
 

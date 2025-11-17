@@ -12,6 +12,9 @@ import HomePage from "@/pages/home-page";
 import ShopPage from "@/pages/shop-page";
 import ProductDetailPage from "@/pages/product-detail-page";
 import CartPage from "@/pages/cart-page";
+import CheckoutPage from "@/pages/checkout";
+import PaymentSuccessPage from "@/pages/payment-success";
+import PaymentFailurePage from "@/pages/payment-failure";
 import AuthPage from "@/pages/auth-page";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminProducts from "@/pages/admin-products";
@@ -34,6 +37,9 @@ function Router() {
       <Route path="/shop" component={ShopPage} />
       <Route path="/product/:id" component={ProductDetailPage} />
       <Route path="/cart" component={CartPage} />
+      <Route path="/checkout" component={CheckoutPage} />
+      <Route path="/payment/success" component={PaymentSuccessPage} />
+      <Route path="/payment/failure" component={PaymentFailurePage} />
       <Route path="/categories" component={ShopPage} />
       <Route path="/offers" component={ShopPage} />
       <Route path="/about" component={AboutPage} />
