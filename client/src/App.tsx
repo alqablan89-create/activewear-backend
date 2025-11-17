@@ -15,6 +15,7 @@ import CartPage from "@/pages/cart-page";
 import AuthPage from "@/pages/auth-page";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminProducts from "@/pages/admin-products";
+import AdminOrders from "@/pages/admin-orders";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,7 +34,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminDashboard} />
       <ProtectedRoute path="/admin/products" component={AdminProducts} />
       <ProtectedRoute path="/admin/categories" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Categories Management</h1></div>} />
-      <ProtectedRoute path="/admin/orders" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Orders Management</h1></div>} />
+      <ProtectedRoute path="/admin/orders" component={AdminOrders} />
       <ProtectedRoute path="/admin/users" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Users Management</h1></div>} />
       <ProtectedRoute path="/admin/discounts" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Discounts Management</h1></div>} />
       <ProtectedRoute path="/admin/settings" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Settings</h1></div>} />

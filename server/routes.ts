@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { db } from "./db";
 import { setupAuth, requireAuth, requireAdmin } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { users, products, categories, orders, orderItems, discountCodes, carts, cartItems, shippingAddresses } from "@shared/schema";
+import { users, products, categories, orders, orderItems, discountCodes, carts, cartItems, shippingAddresses, orderStatusHistory } from "@shared/schema";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -495,6 +495,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting category:", error);
       res.status(500).json({ error: "Failed to delete category" });
+    }
+  });
+
+  // Admin orders routes
+  app.get("/api/admin/orders", requireAdmin, async (req, res) => {
+    try {
+      const allOrders = await db
+        .select()
+        .from(orders)
+        .orderBy(desc(orders.createdAt));
+      
+      res.json(allOrders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.get("/api/admin/orders/:id", requireAdmin, async (req, res) => {
+    try {
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, req.params.id));
+
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Fetch order items with product details
+      const items = await db
+        .select({
+          id: orderItems.id,
+          productId: orderItems.productId,
+          quantity: orderItems.quantity,
+          price: orderItems.price,
+          selectedColor: orderItems.selectedColor,
+          selectedSize: orderItems.selectedSize,
+          product: {
+            nameEn: products.nameEn,
+            nameAr: products.nameAr,
+            images: products.images,
+          },
+        })
+        .from(orderItems)
+        .innerJoin(products, eq(orderItems.productId, products.id))
+        .where(eq(orderItems.orderId, req.params.id));
+
+      res.json({ ...order, items });
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      res.status(500).json({ error: "Failed to fetch order" });
+    }
+  });
+
+  app.put("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
+    try {
+      const { status } = req.body;
+
+      if (!status || !['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const [updated] = await db
+        .update(orders)
+        .set({ status })
+        .where(eq(orders.id, req.params.id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Add to status history
+      await db.insert(orderStatusHistory).values({
+        orderId: req.params.id,
+        status,
+        note: `Status changed to ${status} by admin`,
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      res.status(500).json({ error: "Failed to update order status" });
     }
   });
 
