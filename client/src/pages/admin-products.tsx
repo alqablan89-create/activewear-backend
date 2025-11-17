@@ -18,10 +18,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-// import { ObjectUploader } from '@/components/object-uploader';
+import { ImageUploader } from '@/components/image-uploader';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminProducts() {
@@ -156,19 +156,19 @@ export default function AdminProducts() {
     }
   };
 
-  const handleImageUpload = async () => {
-    const res = await apiRequest('POST', '/api/objects/upload');
-    const data = await res.json();
-    return { method: 'PUT' as const, url: data.uploadURL };
-  };
-
-  const handleUploadComplete = (result: any) => {
-    const uploadedUrls = result.successful.map((file: any) => file.uploadURL);
+  const handleUploadComplete = (urls: string[]) => {
     setFormData((prev) => ({
       ...prev,
-      images: [...prev.images, ...uploadedUrls],
+      images: [...prev.images, ...urls],
     }));
     toast({ title: 'Images uploaded successfully' });
+  };
+
+  const handleRemoveImage = (url: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((img) => img !== url),
+    }));
   };
 
   const style = {
@@ -299,17 +299,14 @@ export default function AdminProducts() {
                   </div>
 
                   <div>
-                    <Label htmlFor="imageUrl">Image URL</Label>
-                    <Input
-                      id="imageUrl"
-                      value={formData.images[0] || ''}
-                      onChange={(e) => setFormData({ ...formData, images: e.target.value ? [e.target.value] : [] })}
-                      placeholder="Enter image URL"
-                      data-testid="input-image-url"
+                    <Label>Product Images</Label>
+                    <ImageUploader
+                      maxNumberOfFiles={10}
+                      maxFileSize={10485760}
+                      onUploadComplete={handleUploadComplete}
+                      existingImages={formData.images}
+                      onRemoveImage={handleRemoveImage}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter a direct image URL for the product
-                    </p>
                   </div>
 
                   <div className="flex items-center justify-between">

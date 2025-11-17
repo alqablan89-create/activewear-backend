@@ -125,6 +125,34 @@ export class ObjectStorageService {
     });
   }
 
+  async getPublicObjectUploadURL(fileName?: string): Promise<{ uploadURL: string; publicURL: string }> {
+    const publicPaths = this.getPublicObjectSearchPaths();
+    if (publicPaths.length === 0) {
+      throw new Error(
+        "PUBLIC_OBJECT_SEARCH_PATHS not set. Create a bucket in 'Object Storage' " +
+          "tool and set PUBLIC_OBJECT_SEARCH_PATHS env var."
+      );
+    }
+
+    const publicPath = publicPaths[0];
+    const objectId = randomUUID();
+    const extension = fileName ? fileName.split('.').pop() : 'jpg';
+    const fullPath = `${publicPath}/products/${objectId}.${extension}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    const uploadURL = await signObjectURL({
+      bucketName,
+      objectName,
+      method: "PUT",
+      ttlSec: 900,
+    });
+
+    const fileName2 = `products/${objectId}.${extension}`;
+    const publicURL = `/public-objects/${fileName2}`;
+
+    return { uploadURL, publicURL };
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();
