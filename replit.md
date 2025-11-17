@@ -104,6 +104,8 @@ Preferred communication style: Simple, everyday language.
 - Support for product variants (color, size selection)
 - Bundle discount logic (10% off when buying T-shirt + Cap together)
 - Cart item quantity management and removal
+- Guest cart support via session-based cart creation
+- Cart persistence through payment flow using Stripe metadata
 
 **Product Management**
 - Multi-image upload support for product galleries
@@ -133,6 +135,9 @@ Preferred communication style: Simple, everyday language.
 - Transaction tracking with payment status management
 - Payment success/failure pages
 - Secure checkout with Stripe Elements
+- **Guest Checkout**: Cart ID stored in PaymentIntent metadata for session-independent order creation
+- **Authenticated Checkout**: Orders linked to user accounts for order history
+- Dual cart lookup: metadata-first (guests) → userId (authenticated) → session fallback
 
 ## External Dependencies
 
